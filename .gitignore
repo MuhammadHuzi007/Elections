@@ -1,0 +1,34 @@
+# Build directories
+build/
+bin/
+obj/
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+election_analysis
+election_tests
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+
