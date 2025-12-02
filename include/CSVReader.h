@@ -6,43 +6,35 @@
 #include <vector>
 
 /**
- * @brief Utility class for reading election data from CSV files
- * 
- * Handles parsing of CSV files and populating ElectionData structure
+ * @brief Simple class for reading CSV files
  */
 class CSVReader {
 public:
     /**
      * @brief Read election data from a CSV file
-     * @param filename Path to CSV file
-     * @param data Reference to ElectionData object to populate
-     * @return true if successful, false otherwise
-     * Time Complexity: O(n) where n is number of lines in file
      */
     static bool readFromFile(const std::string& filename, ElectionData& data);
 
     /**
-     * @brief Parse a single CSV line into an ElectionRecord
-     * @param line CSV line string
-     * @return ElectionRecord object
+     * @brief Parse one CSV line into an ElectionRecord
      */
     static ElectionRecord parseLine(const std::string& line);
 
 private:
     /**
-     * @brief Split a string by delimiter
-     * @param str String to split
-     * @param delimiter Delimiter character
-     * @return Vector of tokens
+     * @brief Split a string by comma
      */
     static std::vector<std::string> split(const std::string& str, char delimiter);
 
     /**
-     * @brief Trim whitespace from string
-     * @param str String to trim
-     * @return Trimmed string
+     * @brief Remove spaces from start and end
      */
     static std::string trim(const std::string& str);
+
+    /**
+     * @brief Convert string to integer (simple version)
+     */
+    static int stringToInt(const std::string& str);
 };
 
 #endif // CSV_READER_H

@@ -56,18 +56,45 @@ std::string getStringInput(const std::string& prompt) {
 /**
  * @brief Get available countries and years from data
  */
-std::map<std::string, std::vector<int>> getAvailableElections(const ElectionData& data) {
-    std::map<std::string, std::set<int>> countryYears;
+std::map<std::string, std::vector<int>> getAvailableElections(ElectionData& data) {
+    std::map<std::string, std::vector<int>> result;
+    std::vector<ElectionRecord> records = data.getAllRecords();
     
-    const auto& records = data.getAllRecords();
-    for (const auto& record : records) {
-        countryYears[record.country].insert(record.year);
+    for (int i = 0; i < records.size(); i++) {
+        std::string country = records[i].country;
+        int year = records[i].year;
+        
+        // Check if country exists in map
+        if (result.find(country) == result.end()) {
+            result[country] = std::vector<int>();
+        }
+        
+        // Check if year already added
+        bool found = false;
+        for (int j = 0; j < result[country].size(); j++) {
+            if (result[country][j] == year) {
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            result[country].push_back(year);
+        }
     }
     
-    std::map<std::string, std::vector<int>> result;
-    for (const auto& pair : countryYears) {
-        result[pair.first] = std::vector<int>(pair.second.begin(), pair.second.end());
-        std::sort(result[pair.first].begin(), result[pair.first].end());
+    // Sort years for each country (bubble sort)
+    for (std::map<std::string, std::vector<int>>::iterator it = result.begin(); it != result.end(); ++it) {
+        std::vector<int>& years = it->second;
+        for (int i = 0; i < years.size() - 1; i++) {
+            for (int j = 0; j < years.size() - i - 1; j++) {
+                if (years[j] > years[j + 1]) {
+                    int temp = years[j];
+                    years[j] = years[j + 1];
+                    years[j + 1] = temp;
+                }
+            }
+        }
     }
     
     return result;
@@ -138,27 +165,25 @@ void displayComparativeAnalysis(const ComparativeAnalysis& analysis) {
               << std::setw(15) << "Seat Change" << std::endl;
     std::cout << std::string(65, '-') << std::endl;
 
-    for (const auto& pair : analysis.partyVoteChanges) {
-        auto seatIt = analysis.partySeatChanges.find(pair.first);
-        int seatChange = (seatIt != analysis.partySeatChanges.end()) ? seatIt->second : 0;
-        std::cout << std::left << std::setw(35) << pair.first
-                  << std::right << std::setw(15) << pair.second
-                  << std::setw(15) << seatChange << std::endl;
+    for (int i = 0; i < analysis.partyChanges.size(); i++) {
+        std::cout << std::left << std::setw(35) << analysis.partyChanges[i].party
+                  << std::right << std::setw(15) << analysis.partyChanges[i].voteChange
+                  << std::setw(15) << analysis.partyChanges[i].seatChange << std::endl;
     }
     std::cout << std::endl;
 
-    if (!analysis.newParties.empty()) {
+    if (analysis.newParties.size() > 0) {
         std::cout << "New Parties in " << analysis.year2 << ": ";
-        for (size_t i = 0; i < analysis.newParties.size(); ++i) {
+        for (int i = 0; i < analysis.newParties.size(); i++) {
             std::cout << analysis.newParties[i];
             if (i < analysis.newParties.size() - 1) std::cout << ", ";
         }
         std::cout << std::endl;
     }
 
-    if (!analysis.disappearedParties.empty()) {
+    if (analysis.disappearedParties.size() > 0) {
         std::cout << "Disappeared Parties: ";
-        for (size_t i = 0; i < analysis.disappearedParties.size(); ++i) {
+        for (int i = 0; i < analysis.disappearedParties.size(); i++) {
             std::cout << analysis.disappearedParties[i];
             if (i < analysis.disappearedParties.size() - 1) std::cout << ", ";
         }
@@ -194,7 +219,7 @@ void displayTopCandidates(const std::vector<ElectionRecord>& candidates, int n) 
 /**
  * @brief Display seat distribution
  */
-void displaySeatDistribution(const std::map<std::string, int>& seatDist) {
+void displaySeatDistribution(const std::vector<SeatInfo>& seatDist) {
     printSeparator();
     std::cout << "SEAT DISTRIBUTION" << std::endl;
     printSeparator();
@@ -202,9 +227,9 @@ void displaySeatDistribution(const std::map<std::string, int>& seatDist) {
               << std::right << std::setw(10) << "Seats" << std::endl;
     std::cout << std::string(50, '-') << std::endl;
 
-    for (const auto& pair : seatDist) {
-        std::cout << std::left << std::setw(40) << pair.first
-                  << std::right << std::setw(10) << pair.second << std::endl;
+    for (int i = 0; i < seatDist.size(); i++) {
+        std::cout << std::left << std::setw(40) << seatDist[i].party
+                  << std::right << std::setw(10) << seatDist[i].seats << std::endl;
     }
     std::cout << std::endl;
 }
@@ -277,7 +302,7 @@ int selectYear(const std::vector<int>& years) {
 /**
  * @brief Show analysis menu for a specific election
  */
-void showElectionAnalysisMenu(const ElectionData& data, const std::string& country, int year) {
+void showElectionAnalysisMenu(ElectionData& data, const std::string& country, int year) {
     while (true) {
         clearScreen();
         printSeparator();

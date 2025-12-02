@@ -1,9 +1,8 @@
 #include "../include/CSVReader.h"
 #include <fstream>
 #include <sstream>
-#include <algorithm>
-#include <cctype>
 
+// Read CSV file and load data
 bool CSVReader::readFromFile(const std::string& filename, ElectionData& data) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -21,67 +20,88 @@ bool CSVReader::readFromFile(const std::string& filename, ElectionData& data) {
         }
 
         // Skip empty lines
-        if (line.empty() || line.find_first_not_of(" \t\r\n") == std::string::npos) {
+        if (line.empty()) {
             continue;
         }
 
-        try {
-            ElectionRecord record = parseLine(line);
-            data.insertRecord(record);
-        } catch (const std::exception& e) {
-            // Skip invalid lines
-            continue;
-        }
+        // Parse the line and add to data
+        ElectionRecord record = parseLine(line);
+        data.addRecord(record);
     }
 
     file.close();
     return true;
 }
 
+// Parse one CSV line into an ElectionRecord
 ElectionRecord CSVReader::parseLine(const std::string& line) {
     std::vector<std::string> tokens = split(line, ',');
-
-    if (tokens.size() < 7) {
-        throw std::runtime_error("Invalid CSV line: insufficient columns");
-    }
 
     ElectionRecord record;
 
     // Parse each field
     record.country = trim(tokens[0]);
-    record.year = std::stoi(trim(tokens[1]));
+    record.year = stringToInt(trim(tokens[1]));
     record.constituency = trim(tokens[2]);
     record.candidate = trim(tokens[3]);
     record.party = trim(tokens[4]);
-    record.votes = std::stoi(trim(tokens[5]));
+    record.votes = stringToInt(trim(tokens[5]));
 
     // Parse "Elected" field (Yes/No)
     std::string electedStr = trim(tokens[6]);
-    std::transform(electedStr.begin(), electedStr.end(), electedStr.begin(), ::tolower);
-    record.elected = (electedStr == "yes" || electedStr == "true" || electedStr == "1");
+    record.elected = (electedStr == "Yes" || electedStr == "yes" || electedStr == "YES");
 
     return record;
 }
 
+// Split string by comma
 std::vector<std::string> CSVReader::split(const std::string& str, char delimiter) {
     std::vector<std::string> tokens;
-    std::stringstream ss(str);
-    std::string token;
+    std::string token = "";
 
-    while (std::getline(ss, token, delimiter)) {
-        tokens.push_back(token);
+    for (int i = 0; i < str.length(); i++) {
+        if (str[i] == delimiter) {
+            tokens.push_back(token);
+            token = "";
+        } else {
+            token += str[i];
+        }
     }
+    tokens.push_back(token); // Add last token
 
     return tokens;
 }
 
+// Remove spaces from start and end of string
 std::string CSVReader::trim(const std::string& str) {
-    size_t first = str.find_first_not_of(" \t\r\n");
-    if (first == std::string::npos) {
+    int start = 0;
+    int end = str.length() - 1;
+
+    // Find first non-space character
+    while (start < str.length() && (str[start] == ' ' || str[start] == '\t' || str[start] == '\r' || str[start] == '\n')) {
+        start++;
+    }
+
+    // Find last non-space character
+    while (end >= 0 && (str[end] == ' ' || str[end] == '\t' || str[end] == '\r' || str[end] == '\n')) {
+        end--;
+    }
+
+    if (start > end) {
         return "";
     }
 
-    size_t last = str.find_last_not_of(" \t\r\n");
-    return str.substr(first, (last - first + 1));
+    return str.substr(start, end - start + 1);
+}
+
+// Convert string to integer
+int CSVReader::stringToInt(const std::string& str) {
+    int result = 0;
+    for (int i = 0; i < str.length(); i++) {
+        if (str[i] >= '0' && str[i] <= '9') {
+            result = result * 10 + (str[i] - '0');
+        }
+    }
+    return result;
 }
 

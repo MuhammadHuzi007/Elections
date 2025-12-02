@@ -1,60 +1,24 @@
 #include "../include/ElectionAnalyzer.h"
-#include <algorithm>
-#include <set>
-#include <cmath>
 
-ElectionStats ElectionAnalyzer::calculateElectionStats(const ElectionData& data,
-                                                       const std::string& country,
-                                                       int year) {
-    ElectionStats stats;
-    stats.country = country;
-    stats.year = year;
-
-    std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
-
-    if (records.empty()) {
-        return stats;
-    }
-
-    // Calculate totals
-    stats.totalVotes = calculateTotalVotes(data, country, year);
-    stats.totalSeats = calculateTotalSeats(data, country, year);
-    stats.totalCandidates = static_cast<int>(records.size());
-
-    // Count unique constituencies
-    std::set<std::string> constituencies;
-    for (const auto& record : records) {
-        constituencies.insert(record.constituency);
-    }
-    stats.constituencies = static_cast<int>(constituencies.size());
-
-    // Calculate party statistics
-    stats.partyStats = calculatePartyVoteShares(data, country, year);
-
-    return stats;
-}
-
-int ElectionAnalyzer::calculateTotalVotes(const ElectionData& data,
-                                          const std::string& country,
-                                          int year) {
+// Calculate total votes for an election
+int ElectionAnalyzer::calculateTotalVotes(ElectionData& data, const std::string& country, int year) {
     std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
     int total = 0;
 
-    for (const auto& record : records) {
-        total += record.votes;
+    for (int i = 0; i < records.size(); i++) {
+        total += records[i].votes;
     }
 
     return total;
 }
 
-int ElectionAnalyzer::calculateTotalSeats(const ElectionData& data,
-                                         const std::string& country,
-                                         int year) {
+// Calculate total seats won
+int ElectionAnalyzer::calculateTotalSeats(ElectionData& data, const std::string& country, int year) {
     std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
     int seats = 0;
 
-    for (const auto& record : records) {
-        if (record.elected) {
+    for (int i = 0; i < records.size(); i++) {
+        if (records[i].elected) {
             seats++;
         }
     }
@@ -62,207 +26,268 @@ int ElectionAnalyzer::calculateTotalSeats(const ElectionData& data,
     return seats;
 }
 
-std::vector<PartyStats> ElectionAnalyzer::calculatePartyVoteShares(const ElectionData& data,
-                                                                   const std::string& country,
-                                                                   int year) {
+// Calculate party-wise statistics
+std::vector<PartyStats> ElectionAnalyzer::calculatePartyVoteShares(ElectionData& data, const std::string& country, int year) {
     std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
-    std::map<std::string, PartyStats> partyMap;
+    std::vector<PartyStats> partyList;
 
     int totalVotes = calculateTotalVotes(data, country, year);
 
-    // Aggregate party data
-    for (const auto& record : records) {
-        if (partyMap.find(record.party) == partyMap.end()) {
-            partyMap[record.party] = PartyStats();
-            partyMap[record.party].party = record.party;
+    // For each record, find or create party stats
+    for (int i = 0; i < records.size(); i++) {
+        // Find if party already exists in list
+        int partyIndex = -1;
+        for (int j = 0; j < partyList.size(); j++) {
+            if (partyList[j].party == records[i].party) {
+                partyIndex = j;
+                break;
+            }
         }
 
-        partyMap[record.party].totalVotes += record.votes;
-        partyMap[record.party].candidatesCount++;
+        // If party not found, create new entry
+        if (partyIndex == -1) {
+            PartyStats newParty;
+            newParty.party = records[i].party;
+            newParty.totalVotes = 0;
+            newParty.seatsWon = 0;
+            newParty.candidatesCount = 0;
+            newParty.voteShare = 0.0;
+            partyList.push_back(newParty);
+            partyIndex = partyList.size() - 1;
+        }
 
-        if (record.elected) {
-            partyMap[record.party].seatsWon++;
+        // Update party stats
+        partyList[partyIndex].totalVotes += records[i].votes;
+        partyList[partyIndex].candidatesCount++;
+        if (records[i].elected) {
+            partyList[partyIndex].seatsWon++;
         }
     }
 
     // Calculate vote shares
-    for (auto& pair : partyMap) {
+    for (int i = 0; i < partyList.size(); i++) {
         if (totalVotes > 0) {
-            pair.second.voteShare = (static_cast<double>(pair.second.totalVotes) / totalVotes) * 100.0;
+            partyList[i].voteShare = (partyList[i].totalVotes * 100.0) / totalVotes;
         }
     }
 
-    // Convert to vector and sort by votes
-    std::vector<PartyStats> result;
-    for (const auto& pair : partyMap) {
-        result.push_back(pair.second);
+    // Sort by total votes (bubble sort - simple!)
+    for (int i = 0; i < partyList.size() - 1; i++) {
+        for (int j = 0; j < partyList.size() - i - 1; j++) {
+            if (partyList[j].totalVotes < partyList[j + 1].totalVotes) {
+                // Swap
+                PartyStats temp = partyList[j];
+                partyList[j] = partyList[j + 1];
+                partyList[j + 1] = temp;
+            }
+        }
     }
 
-    std::sort(result.begin(), result.end(),
-              [](const PartyStats& a, const PartyStats& b) {
-                  return a.totalVotes > b.totalVotes;
-              });
-
-    return result;
+    return partyList;
 }
 
-std::map<std::string, int> ElectionAnalyzer::getSeatDistribution(const ElectionData& data,
-                                                                 const std::string& country,
-                                                                 int year) {
+// Calculate election statistics
+ElectionStats ElectionAnalyzer::calculateElectionStats(ElectionData& data, const std::string& country, int year) {
+    ElectionStats stats;
+    stats.country = country;
+    stats.year = year;
+
     std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
-    std::map<std::string, int> seatMap;
 
-    for (const auto& record : records) {
-        if (record.elected) {
-            seatMap[record.party]++;
+    stats.totalVotes = calculateTotalVotes(data, country, year);
+    stats.totalSeats = calculateTotalSeats(data, country, year);
+    stats.totalCandidates = records.size();
+
+    // Count unique constituencies
+    std::vector<std::string> constituencies;
+    for (int i = 0; i < records.size(); i++) {
+        bool found = false;
+        for (int j = 0; j < constituencies.size(); j++) {
+            if (constituencies[j] == records[i].constituency) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            constituencies.push_back(records[i].constituency);
         }
     }
+    stats.constituencies = constituencies.size();
 
-    return seatMap;
-}
-
-std::vector<PartyStats> ElectionAnalyzer::rankPartiesByVotes(const ElectionData& data,
-                                                            const std::string& country,
-                                                            int year) {
-    return calculatePartyVoteShares(data, country, year);
-}
-
-std::vector<PartyStats> ElectionAnalyzer::rankPartiesBySeats(const ElectionData& data,
-                                                             const std::string& country,
-                                                             int year) {
-    std::vector<PartyStats> stats = calculatePartyVoteShares(data, country, year);
-
-    std::sort(stats.begin(), stats.end(),
-              [](const PartyStats& a, const PartyStats& b) {
-                  if (a.seatsWon != b.seatsWon) {
-                      return a.seatsWon > b.seatsWon;
-                  }
-                  return a.totalVotes > b.totalVotes;
-              });
+    stats.partyStats = calculatePartyVoteShares(data, country, year);
 
     return stats;
 }
 
-ComparativeAnalysis ElectionAnalyzer::compareElections(const ElectionData& data,
-                                                       const std::string& country,
-                                                       int year1,
-                                                       int year2) {
+// Get seat distribution
+std::vector<SeatInfo> ElectionAnalyzer::getSeatDistribution(ElectionData& data, const std::string& country, int year) {
+    std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
+    std::vector<SeatInfo> seatList;
+
+    for (int i = 0; i < records.size(); i++) {
+        if (records[i].elected) {
+            // Find if party already exists
+            int partyIndex = -1;
+            for (int j = 0; j < seatList.size(); j++) {
+                if (seatList[j].party == records[i].party) {
+                    partyIndex = j;
+                    break;
+                }
+            }
+
+            if (partyIndex == -1) {
+                SeatInfo newSeat;
+                newSeat.party = records[i].party;
+                newSeat.seats = 1;
+                seatList.push_back(newSeat);
+            } else {
+                seatList[partyIndex].seats++;
+            }
+        }
+    }
+
+    return seatList;
+}
+
+// Rank parties by votes
+std::vector<PartyStats> ElectionAnalyzer::rankPartiesByVotes(ElectionData& data, const std::string& country, int year) {
+    return calculatePartyVoteShares(data, country, year);
+}
+
+// Get top N candidates
+std::vector<ElectionRecord> ElectionAnalyzer::getTopCandidates(ElectionData& data, const std::string& country, int year, int n) {
+    std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
+
+    // Sort by votes using bubble sort
+    for (int i = 0; i < records.size() - 1; i++) {
+        for (int j = 0; j < records.size() - i - 1; j++) {
+            if (records[j].votes < records[j + 1].votes) {
+                // Swap
+                ElectionRecord temp = records[j];
+                records[j] = records[j + 1];
+                records[j + 1] = temp;
+            }
+        }
+    }
+
+    // Return top n
+    std::vector<ElectionRecord> topN;
+    for (int i = 0; i < n && i < records.size(); i++) {
+        topN.push_back(records[i]);
+    }
+
+    return topN;
+}
+
+// Get winning candidates
+std::vector<ElectionRecord> ElectionAnalyzer::getWinningCandidates(ElectionData& data, const std::string& country, int year) {
+    std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
+    std::vector<ElectionRecord> winners;
+
+    for (int i = 0; i < records.size(); i++) {
+        if (records[i].elected) {
+            winners.push_back(records[i]);
+        }
+    }
+
+    // Sort by votes
+    for (int i = 0; i < winners.size() - 1; i++) {
+        for (int j = 0; j < winners.size() - i - 1; j++) {
+            if (winners[j].votes < winners[j + 1].votes) {
+                ElectionRecord temp = winners[j];
+                winners[j] = winners[j + 1];
+                winners[j + 1] = temp;
+            }
+        }
+    }
+
+    return winners;
+}
+
+// Compare two elections
+ComparativeAnalysis ElectionAnalyzer::compareElections(ElectionData& data, const std::string& country, int year1, int year2) {
     ComparativeAnalysis analysis;
     analysis.country = country;
     analysis.year1 = year1;
     analysis.year2 = year2;
 
-    // Get statistics for both elections
     ElectionStats stats1 = calculateElectionStats(data, country, year1);
     ElectionStats stats2 = calculateElectionStats(data, country, year2);
 
-    // Calculate vote changes
     analysis.voteChange = stats2.totalVotes - stats1.totalVotes;
     if (stats1.totalVotes > 0) {
-        analysis.voteChangePercent = ((static_cast<double>(analysis.voteChange) / stats1.totalVotes) * 100.0);
+        analysis.voteChangePercent = (analysis.voteChange * 100.0) / stats1.totalVotes;
     }
 
-    // Get party statistics for both years
-    std::vector<PartyStats> parties1 = calculatePartyVoteShares(data, country, year1);
-    std::vector<PartyStats> parties2 = calculatePartyVoteShares(data, country, year2);
+    // Compare parties
+    for (int i = 0; i < stats1.partyStats.size(); i++) {
+        std::string party = stats1.partyStats[i].party;
+        int votes1 = stats1.partyStats[i].totalVotes;
+        int seats1 = stats1.partyStats[i].seatsWon;
 
-    // Create maps for easier lookup
-    std::map<std::string, PartyStats> partyMap1, partyMap2;
-    for (const auto& ps : parties1) {
-        partyMap1[ps.party] = ps;
-    }
-    for (const auto& ps : parties2) {
-        partyMap2[ps.party] = ps;
-    }
+        // Find same party in year2
+        int votes2 = 0;
+        int seats2 = 0;
+        bool foundInYear2 = false;
 
-    // Calculate party vote and seat changes
-    std::set<std::string> allParties;
-    for (const auto& pair : partyMap1) {
-        allParties.insert(pair.first);
-    }
-    for (const auto& pair : partyMap2) {
-        allParties.insert(pair.first);
-    }
-
-    for (const std::string& party : allParties) {
-        int votes1 = (partyMap1.find(party) != partyMap1.end()) ? partyMap1[party].totalVotes : 0;
-        int votes2 = (partyMap2.find(party) != partyMap2.end()) ? partyMap2[party].totalVotes : 0;
-        analysis.partyVoteChanges[party] = votes2 - votes1;
-
-        int seats1 = (partyMap1.find(party) != partyMap1.end()) ? partyMap1[party].seatsWon : 0;
-        int seats2 = (partyMap2.find(party) != partyMap2.end()) ? partyMap2[party].seatsWon : 0;
-        analysis.partySeatChanges[party] = seats2 - seats1;
-
-        // Track new and disappeared parties
-        if (partyMap1.find(party) == partyMap1.end() && partyMap2.find(party) != partyMap2.end()) {
-            analysis.newParties.push_back(party);
+        for (int j = 0; j < stats2.partyStats.size(); j++) {
+            if (stats2.partyStats[j].party == party) {
+                votes2 = stats2.partyStats[j].totalVotes;
+                seats2 = stats2.partyStats[j].seatsWon;
+                foundInYear2 = true;
+                break;
+            }
         }
-        if (partyMap1.find(party) != partyMap1.end() && partyMap2.find(party) == partyMap2.end()) {
+
+        PartyChange change;
+        change.party = party;
+        change.voteChange = votes2 - votes1;
+        change.seatChange = seats2 - seats1;
+        analysis.partyChanges.push_back(change);
+
+        if (!foundInYear2) {
             analysis.disappearedParties.push_back(party);
+        }
+    }
+
+    // Find new parties in year2
+    for (int i = 0; i < stats2.partyStats.size(); i++) {
+        std::string party = stats2.partyStats[i].party;
+        bool foundInYear1 = false;
+
+        for (int j = 0; j < stats1.partyStats.size(); j++) {
+            if (stats1.partyStats[j].party == party) {
+                foundInYear1 = true;
+                break;
+            }
+        }
+
+        if (!foundInYear1) {
+            analysis.newParties.push_back(party);
         }
     }
 
     return analysis;
 }
 
-std::map<int, PartyStats> ElectionAnalyzer::getPartyTrend(const ElectionData& data,
-                                                         const std::string& country,
-                                                         const std::string& party,
-                                                         const std::vector<int>& years) {
-    std::map<int, PartyStats> trend;
+// Get party trend across years
+std::vector<PartyTrend> ElectionAnalyzer::getPartyTrend(ElectionData& data, const std::string& country, const std::string& party, std::vector<int> years) {
+    std::vector<PartyTrend> trend;
 
-    for (int year : years) {
-        std::vector<PartyStats> stats = calculatePartyVoteShares(data, country, year);
+    for (int i = 0; i < years.size(); i++) {
+        std::vector<PartyStats> allParties = calculatePartyVoteShares(data, country, years[i]);
 
-        for (const auto& ps : stats) {
-            if (ps.party == party) {
-                trend[year] = ps;
+        for (int j = 0; j < allParties.size(); j++) {
+            if (allParties[j].party == party) {
+                PartyTrend pt;
+                pt.year = years[i];
+                pt.stats = allParties[j];
+                trend.push_back(pt);
                 break;
             }
         }
     }
 
     return trend;
-}
-
-std::vector<ElectionRecord> ElectionAnalyzer::getTopCandidates(const ElectionData& data,
-                                                               const std::string& country,
-                                                               int year,
-                                                               int n) {
-    std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
-
-    // Sort by votes descending
-    std::sort(records.begin(), records.end(),
-              [](const ElectionRecord& a, const ElectionRecord& b) {
-                  return a.votes > b.votes;
-              });
-
-    // Return top n
-    if (static_cast<size_t>(n) > records.size()) {
-        n = static_cast<int>(records.size());
-    }
-
-    return std::vector<ElectionRecord>(records.begin(), records.begin() + n);
-}
-
-std::vector<ElectionRecord> ElectionAnalyzer::getWinningCandidates(const ElectionData& data,
-                                                                  const std::string& country,
-                                                                  int year) {
-    std::vector<ElectionRecord> records = data.getElectionRecords(country, year);
-    std::vector<ElectionRecord> winners;
-
-    for (const auto& record : records) {
-        if (record.elected) {
-            winners.push_back(record);
-        }
-    }
-
-    // Sort by votes descending
-    std::sort(winners.begin(), winners.end(),
-              [](const ElectionRecord& a, const ElectionRecord& b) {
-                  return a.votes > b.votes;
-              });
-
-    return winners;
 }
 
