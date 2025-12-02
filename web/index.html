@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Data Analysis System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗳️ Election Data Analysis System</h1>
+            <p>Comprehensive election analysis using custom data structures</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="stats">Election Statistics</button>
+            <button class="tab-btn" data-tab="compare">Compare Elections</button>
+            <button class="tab-btn" data-tab="candidates">Top Candidates</button>
+            <button class="tab-btn" data-tab="about">About</button>
+        </nav>
+
+        <!-- Election Statistics Tab -->
+        <div id="stats" class="tab-content active">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="stats-country">Country:</label>
+                    <select id="stats-country">
+                        <option value="">Select Country</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="stats-year">Year:</label>
+                    <select id="stats-year">
+                        <option value="">Select Year</option>
+                    </select>
+                </div>
+                <button id="stats-analyze" class="btn btn-primary">Analyze</button>
+            </div>
+
+            <div id="stats-results" class="results hidden">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Votes</h3>
+                        <p class="stat-value" id="total-votes">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Seats</h3>
+                        <p class="stat-value" id="total-seats">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Candidates</h3>
+                        <p class="stat-value" id="total-candidates">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Constituencies</h3>
+                        <p class="stat-value" id="total-constituencies">-</p>
+                    </div>
+                </div>
+
+                <div class="party-stats">
+                    <h2>Party-wise Statistics</h2>
+                    <div class="table-container">
+                        <table id="party-table">
+                            <thead>
+                                <tr>
+                                    <th>Party</th>
+                                    <th>Total Votes</th>
+                                    <th>Vote Share</th>
+                                    <th>Seats Won</th>
+                                    <th>Candidates</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="vote-share-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compare Elections Tab -->
+        <div id="compare" class="tab-content">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="compare-country">Country:</label>
+                    <select id="compare-country">
+                        <option value="">Select Country</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="compare-year1">Year 1:</label>
+                    <select id="compare-year1">
+                        <option value="">Select Year</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="compare-year2">Year 2:</label>
+                    <select id="compare-year2">
+                        <option value="">Select Year</option>
+                    </select>
+                </div>
+                <button id="compare-analyze" class="btn btn-primary">Compare</button>
+            </div>
+
+            <div id="compare-results" class="results hidden">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Vote Change</h3>
+                        <p class="stat-value" id="vote-change">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Change Percentage</h3>
+                        <p class="stat-value" id="vote-change-percent">-</p>
+                    </div>
+                </div>
+
+                <div class="party-stats">
+                    <h2>Party Changes</h2>
+                    <div class="table-container">
+                        <table id="compare-table">
+                            <thead>
+                                <tr>
+                                    <th>Party</th>
+                                    <th>Vote Change</th>
+                                    <th>Seat Change</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Candidates Tab -->
+        <div id="candidates" class="tab-content">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="cand-country">Country:</label>
+                    <select id="cand-country">
+                        <option value="">Select Country</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="cand-year">Year:</label>
+                    <select id="cand-year">
+                        <option value="">Select Year</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="cand-count">Top N:</label>
+                    <input type="number" id="cand-count" value="10" min="1" max="50">
+                </div>
+                <button id="cand-analyze" class="btn btn-primary">Show Top Candidates</button>
+            </div>
+
+            <div id="cand-results" class="results hidden">
+                <div class="table-container">
+                    <table id="cand-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Candidate</th>
+                                <th>Party</th>
+                                <th>Constituency</th>
+                                <th>Votes</th>
+                                <th>Elected</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Tab -->
+        <div id="about" class="tab-content">
+            <div class="about-section">
+                <h2>About This System</h2>
+                <p>This Election Data Analysis System is built using custom data structures in C++ with a modern web-based frontend.</p>
+                
+                <h3>Features</h3>
+                <ul>
+                    <li>Efficient O(1) data retrieval using hash maps</li>
+                    <li>Comprehensive election statistics</li>
+                    <li>Comparative analysis between elections</li>
+                    <li>Party trend analysis</li>
+                    <li>Top candidates ranking</li>
+                </ul>
+
+                <h3>Data Structure Complexity</h3>
+                <table class="complexity-table">
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>Time Complexity</th>
+                            <th>Space Complexity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Insert Record</td>
+                            <td>O(1) avg</td>
+                            <td>O(1)</td>
+                        </tr>
+                        <tr>
+                            <td>Retrieve Record</td>
+                            <td>O(1) avg</td>
+                            <td>O(1)</td>
+                        </tr>
+                        <tr>
+                            <td>Calculate Statistics</td>
+                            <td>O(n)</td>
+                            <td>O(p)</td>
+                        </tr>
+                        <tr>
+                            <td>Comparative Analysis</td>
+                            <td>O(n1 + n2)</td>
+                            <td>O(p1 + p2)</td>
+                        </tr>
+                        <tr>
+                            <td>Rank Parties</td>
+                            <td>O(n log n)</td>
+                            <td>O(p)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="note">Where n = records, p = parties, n1/n2 = records per election</p>
+
+                <h3>Technology Stack</h3>
+                <ul>
+                    <li><strong>Backend:</strong> C++17 with custom data structures</li>
+                    <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript</li>
+                    <li><strong>Server:</strong> Custom HTTP server</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Election Data Analysis System | Built with C++ & Modern Web Technologies</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

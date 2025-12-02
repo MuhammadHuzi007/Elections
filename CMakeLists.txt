@@ -28,10 +28,17 @@ set(HEADERS
     include/ElectionAnalyzer.h
 )
 
-# Main executable
+# Main executable (Console version)
 add_executable(election_analysis
     ${SOURCES}
     src/main.cpp
+)
+
+# Web GUI executable
+add_executable(election_web
+    ${SOURCES}
+    src/HTTPServer.cpp
+    src/main_web.cpp
 )
 
 # Test executable
@@ -39,6 +46,11 @@ add_executable(election_tests
     ${SOURCES}
     tests/test_main.cpp
 )
+
+# Link Winsock on Windows for web server
+if(WIN32)
+    target_link_libraries(election_web ws2_32)
+endif()
 
 # Compiler flags
 if(MSVC)

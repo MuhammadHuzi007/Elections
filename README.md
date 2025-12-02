@@ -2,10 +2,18 @@
 
 A comprehensive C++ application for analyzing election data using custom data structures. This system efficiently stores, queries, and analyzes election results from multiple countries and years.
 
+## 🎯 Two Interfaces Available
+
+1. **Console Interface** - Interactive text-based menu system
+2. **Web GUI** - Modern browser-based interface (NEW! ✨)
+
 ## Features
 
 - **Custom Data Structure**: Efficient hash-map based structure for O(1) average case operations
 - **CSV Data Loading**: Reads election data from CSV files
+- **Two User Interfaces**:
+  - Console: Interactive menu-driven terminal interface
+  - Web GUI: Modern, responsive web interface
 - **Comprehensive Analysis**:
   - Total votes, seats, and turnout calculations
   - Party-wise vote shares and seat distributions
@@ -13,6 +21,7 @@ A comprehensive C++ application for analyzing election data using custom data st
   - Party trend analysis across multiple years
   - Top candidates ranking
 - **Unit Tests**: Comprehensive test suite for all operations
+- **REST API**: HTTP server with JSON API endpoints
 
 ## Data Structure Design
 
@@ -70,6 +79,7 @@ cmake --build . --config Release
 
 ### Running
 
+**Console Version:**
 ```bash
 # Run main program
 ./bin/election_analysis
@@ -78,9 +88,26 @@ cmake --build . --config Release
 ./bin/election_tests
 ```
 
+**Web GUI Version:**
+```bash
+# Build web version
+./compile_web.ps1  # or build_web.bat
+
+# Run web server
+./bin/election_web.exe
+
+# Open browser to http://localhost:8080
+```
+
 On Windows:
 ```cmd
+REM Console version
 bin\Release\election_analysis.exe
+
+REM Web GUI version
+bin\Release\election_web.exe
+
+REM Tests
 bin\Release\election_tests.exe
 ```
 
@@ -92,17 +119,51 @@ bin\Release\election_tests.exe
 │   ├── ElectionRecord.h      # Record structure definition
 │   ├── ElectionData.h         # Main data structure class
 │   ├── CSVReader.h            # CSV file reader
-│   └── ElectionAnalyzer.h     # Analysis functions
+│   ├── ElectionAnalyzer.h     # Analysis functions
+│   └── HTTPServer.h           # HTTP server for web GUI
 ├── src/
 │   ├── ElectionData.cpp       # Data structure implementation
 │   ├── CSVReader.cpp          # CSV parsing implementation
 │   ├── ElectionAnalyzer.cpp   # Analysis implementation
-│   └── main.cpp               # Main program
+│   ├── HTTPServer.cpp         # HTTP server implementation
+│   ├── main.cpp               # Console interface
+│   └── main_web.cpp           # Web server entry point
+├── web/
+│   ├── index.html             # Web GUI HTML
+│   ├── style.css              # Web GUI styling
+│   └── app.js                 # Web GUI JavaScript
 ├── tests/
 │   └── test_main.cpp          # Unit tests
 ├── CMakeLists.txt             # Build configuration
+├── compile_web.ps1            # PowerShell build script for web
+├── build_web.bat              # Batch build script for web
+├── WEB_GUI_GUIDE.md           # Web GUI documentation
 └── README.md                  # This file
 ```
+
+## Quick Start
+
+### Console Version
+```powershell
+# Build
+.\compile.ps1
+
+# Run
+.\bin\election_analysis.exe
+```
+
+### Web GUI Version
+```powershell
+# Build
+.\compile_web.ps1
+
+# Run
+.\bin\election_web.exe
+
+# Open browser to http://localhost:8080
+```
+
+See [WEB_GUI_GUIDE.md](WEB_GUI_GUIDE.md) for detailed web GUI documentation.
 
 ## Data Format
 
